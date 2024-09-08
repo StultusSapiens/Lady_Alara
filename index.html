@@ -80,6 +80,14 @@
             font-size: 1.2em;
             overflow-y: auto;
         }
+.card-back-content {
+  height: 100%; 
+  width: 100%;
+  /* Keep overflow-y for scrolling */
+  overflow-y: auto;
+  padding-right: 20px;
+  padding-bottom: 20px;
+}
         .card-back h2 {
             margin-bottom: 20px;
             font-size: 2.2em;
@@ -145,6 +153,33 @@
             pointer-events: none;
             opacity: 0;
         }
+        
+        @media (max-width: 768px) {
+            .card-back {
+                font-size: 1em;
+            }
+            .card-back h2 {
+                font-size: 1.8em;
+            }
+            .card-front .title {
+                font-size: 2em;
+            }
+        }
+
+        .card-back-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .card-back-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        .card-back-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        .card-back-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -156,10 +191,15 @@
                 <div class="title">Lady Elara Thornfield</div>
             </div>
             <div class="card-face card-back">
-                <h2>BIOGRAPHY</h2>
-                <p>Lady Elara Thornfield is the enigmatic mistress of Thornfield Manor, a woman shrouded in mystery and quiet elegance. Born into privilege, she carries the burden of her family's dark legacy, yet her demeanor reflects an unusual softness, a contrast to the cruelty often associated with the Thornfield name.</p>
-                <p>Her striking beauty—marked by raven-black hair and piercing emerald eyes—only enhances her air of untouchability. Though she commands respect in the household, Elara remains an elusive figure, often retreating to the shadows of the estate, where her secrets are safely kept.</p>
-                <p>Whispers suggest she is more than just an observer of the manor's cruel practices, but her true motivations remain a mystery, hidden behind her composed façade. The depths of her character, like the manor itself, hold untold stories waiting to be unraveled.</p>
+                <div class="card-back-content" id="cardBackContent">
+                    <h2>BIOGRAPHY</h2>
+                    <p>Lady Elara Thornfield is the enigmatic mistress of Thornfield Manor, a woman shrouded in mystery and quiet elegance. Born into privilege, she carries the burden of her family's dark legacy, yet her demeanor reflects an unusual softness, a contrast to the cruelty often associated with the Thornfield name.</p>
+                    <p>Her striking beauty—marked by raven-black hair and piercing emerald eyes—only enhances her air of untouchability. Though she commands respect in the household, Elara remains an elusive figure, often retreating to the shadows of the estate, where her secrets are safely kept.</p>
+                    <p>Whispers suggest she is more than just an observer of the manor's cruel practices, but her true motivations remain a mystery, hidden behind her composed façade. The depths of her character, like the manor itself, hold untold stories waiting to be unraveled.</p>
+                    <p>As the years pass, Lady Elara's influence over Thornfield Manor grows, yet so do the rumors surrounding her past. Some say she possesses otherworldly abilities, while others claim she's a master manipulator, orchestrating events from behind the scenes.</p>
+                    <p>Despite the swirling speculation, Lady Elara maintains her poise and dignity, rarely addressing the gossip that follows her like a shadow. Her rare moments of vulnerability are witnessed only by a select few, hinting at a complex inner world that few truly understand.</p>
+                    <p>As the story of Thornfield Manor unfolds, Lady Elara Thornfield remains at its heart—a captivating enigma whose true nature may never be fully revealed, but whose presence continues to shape the destiny of all who cross her path.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -168,7 +208,16 @@
         const card = document.getElementById('card');
         const magicalParticles = document.getElementById('magicalParticles');
         const infoButton = document.getElementById('infoButton');
+        const cardBackContent = document.getElementById('cardBackContent');
         let isFlipped = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let tiltX = 0;
+        let tiltY = 0;
+
+        function lerp(start, end, factor) {
+            return (1 - factor) * start + factor * end;
+        }
 
         function handleMouseMove(e) {
             if (isFlipped) return;
@@ -180,13 +229,19 @@
             const centerX = rect.width / 2;
             const centerY = rect.height / 2;
 
-            const tiltX = (y - centerY) / 30;
-            const tiltY = (centerX - x) / 30;
+            const targetTiltX = (y - centerY) / 30;
+            const targetTiltY = (centerX - x) / 30;
+
+            tiltX = lerp(tiltX, targetTiltX, 0.1);
+            tiltY = lerp(tiltY, targetTiltY, 0.1);
 
             card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(0.95)`;
 
-            // Create particle
-            createParticle(x, y);
+            if (Math.abs(x - lastMouseX) > 5 || Math.abs(y - lastMouseY) > 5) {
+                createParticle(x, y);
+                lastMouseX = x;
+                lastMouseY = y;
+            }
         }
 
         function createParticle(x, y) {
@@ -198,7 +253,6 @@
             particle.style.height = particle.style.width;
             magicalParticles.appendChild(particle);
 
-            // Animate particle
             const animation = particle.animate([
                 { transform: 'translate(0, 0)', opacity: 1 },
                 { transform: `translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px)`, opacity: 0 }
@@ -215,6 +269,8 @@
 
         function resetCardPosition() {
             if (!isFlipped) {
+                tiltX = 0;
+                tiltY = 0;
                 card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(0.95)';
             }
         }
@@ -224,12 +280,20 @@
             card.classList.toggle('flipped');
             if (isFlipped) {
                 card.style.transform = 'rotateY(180deg) scale(0.95)';
+                cardBackContent.style.pointerEvents = 'auto';
+                cardBackContent.style.overflow = 'auto';
             } else {
                 resetCardPosition();
+                cardBackContent.style.pointerEvents = 'none';
+                cardBackContent.style.overflow = 'hidden';
             }
         }
 
         card.addEventListener('mousemove', handleMouseMove);
+        card.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            handleMouseMove(e.touches[0]);
+        }, { passive: false });
         card.addEventListener('mouseleave', resetCardPosition);
         card.addEventListener('click', flipCard);
         infoButton.addEventListener('click', (e) => {
@@ -237,12 +301,34 @@
             flipCard();
         });
 
-        // Notify parent window when card is flipped
         card.addEventListener('transitionend', (e) => {
             if (e.propertyName === 'transform') {
                 window.parent.postMessage(isFlipped ? 'cardFlippedToBack' : 'cardFlippedToFront', '*');
             }
         });
+
+        function animateTilt() {
+            if (!isFlipped) {
+                card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(0.95)`;
+            }
+            requestAnimationFrame(animateTilt);
+        }
+        animateTilt();
+
+        cardBackContent.addEventListener('wheel', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
+
+        cardBackContent.addEventListener('touchmove', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
+
+        cardBackContent.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        cardBackContent.style.pointerEvents = 'none';
+        cardBackContent.style.overflow = 'hidden';
     </script>
 </body>
 </html>
